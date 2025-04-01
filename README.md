@@ -116,9 +116,7 @@ We welcome contributions to enhance the project. To contribute:
 - **Threat Intelligence API**: Incorporate APIs for real-time blacklist verification.
 - **Mobile App**: Develop a lightweight app for checking URLs on mobile devices.
 
-## License
 
-This project is open-source and licensed under the MIT License. Feel free to use and modify it for personal or commercial purposes.
 
 ## Acknowledgments
 
