@@ -39,7 +39,7 @@ cd phishing-url-detection
 To start the phishing URL detection system, run:
 
 ```bash
-python phishing_detection.py
+python main.py
 ```
 
 Or, if using a Jupyter Notebook:
