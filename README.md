@@ -1,12 +1,12 @@
-# Phishing URL Detection
+# 🛡️ Phishing URL Detection
 
-## Overview
+## 🔍 Overview
 
 Phishing attacks are a significant cybersecurity threat, targeting users by tricking them into providing sensitive information such as usernames, passwords, and financial details. This project focuses on developing an AI-powered phishing URL detection system using machine learning and natural language processing techniques.
 
 The system utilizes a combination of heuristic-based features, WHOIS domain data, and transformer-based deep learning models to classify URLs as either phishing or legitimate. The project also features an interactive web-based interface using Gradio for real-time phishing detection.
 
-## Features
+## 🚀 Features
 
 - **Advanced Machine Learning Techniques**: Utilizes NLP-based transformers for analyzing URL structures.
 - **Feature Extraction**: Extracts lexical, host-based, and content-based features from URLs.
@@ -15,11 +15,11 @@ The system utilizes a combination of heuristic-based features, WHOIS domain data
 - **Visualization Tools**: Includes plots and metrics to analyze model performance.
 - **Customizable Model**: Supports fine-tuning of parameters and model retraining with new data.
 
-## Installation
+## ⚙️ Installation
 
 To set up the project on your local machine, follow these steps:
 
-### Prerequisites
+### 📌 Prerequisites
 
 Ensure you have Python installed (recommended version 3.8 or above). Install the required dependencies using:
 
@@ -27,14 +27,14 @@ Ensure you have Python installed (recommended version 3.8 or above). Install the
 pip install gradio python-whois transformers torch numpy pandas matplotlib scikit-learn joblib tqdm requests
 ```
 
-### Clone the Repository
+### 📥 Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/phishing-url-detection.git
 cd phishing-url-detection
 ```
 
-### Running the Application
+### ▶️ Running the Application
 
 To start the phishing URL detection system, run:
 
@@ -47,7 +47,7 @@ Or, if using a Jupyter Notebook:
 1. Open `phishing_detection.ipynb` in Jupyter Notebook.
 2. Execute the cells sequentially.
 
-## How It Works
+## 🛠️ How It Works
 
 The detection model follows a multi-step approach:
 
@@ -60,14 +60,14 @@ The detection model follows a multi-step approach:
 3. **Model Prediction**: The extracted features are passed to a machine learning classifier (e.g., Random Forest, Logistic Regression, or Transformer-based models) for classification.
 4. **Result Display**: The model outputs whether the URL is phishing or legitimate, along with confidence scores.
 
-## Example Usage
+## 📊 Example Usage
 
 1. Open the Gradio web interface.
 2. Enter a suspicious URL in the input field.
 3. Click the "Check URL" button.
 4. The model will analyze and display the results.
 
-## Dataset
+## 📂 Dataset
 
 The model is trained on a combination of:
 
@@ -75,7 +75,7 @@ The model is trained on a combination of:
 - Legitimate URL datasets from Alexa and Common Crawl
 - Custom labeled data collected through web scraping
 
-## File Structure
+## 📁 File Structure
 
 ```
 📂 phishing-url-detection/
@@ -87,7 +87,7 @@ The model is trained on a combination of:
 │-- 📂 images/                       # Screenshots and visualizations
 ```
 
-## Model Performance
+## 📈 Model Performance
 
 The phishing URL detection model has been evaluated on various metrics including:
 
@@ -95,11 +95,11 @@ The phishing URL detection model has been evaluated on various metrics including
 - **Precision & Recall**: Evaluates phishing vs legitimate classification performance.
 - **F1-Score**: Balances precision and recall for reliable evaluation.
 
-## Model Link
+## 🔗 Model Link
 
 You can access and use the trained model from Hugging Face here: https\://huggingface.co/spaces/eddiebee/phishing\_detection\_model\_playground/tree/main
 
-## Contribution Guidelines
+## 🤝 Contribution Guidelines
 
 We welcome contributions to enhance the project. To contribute:
 
@@ -109,17 +109,22 @@ We welcome contributions to enhance the project. To contribute:
 4. Push to GitHub: `git push origin feature-branch`
 5. Open a Pull Request for review.
 
-## Future Enhancements
+## 🔮 Future Enhancements
 
 - **Integration with Web Browsers**: Implement browser extensions for automatic phishing detection.
 - **Deep Learning Models**: Train advanced deep learning models like BERT or GPT for improved classification.
 - **Threat Intelligence API**: Incorporate APIs for real-time blacklist verification.
 - **Mobile App**: Develop a lightweight app for checking URLs on mobile devices.
 
-
-
-## Acknowledgments
+## 🙌 Acknowledgments
 
 - Thanks to open-source datasets and libraries that made this project possible.
 - Inspired by academic research in cybersecurity and phishing detection.
+
+## 📞 Contact
+
+For any queries or contributions, feel free to reach out:
+
+- **Email**: aryankaminwar@gmail.com 
+
 
