@@ -47,6 +47,13 @@ Or, if using a Jupyter Notebook:
 1. Open `phishing_detection.ipynb` in Jupyter Notebook.
 2. Execute the cells sequentially.
 
+📝 Demo
+![image](https://github.com/user-attachments/assets/76a3fced-a21c-420b-9d8c-a50394732490)
+
+![image](https://github.com/user-attachments/assets/1356095a-aa35-4781-9d81-798e30e4a929)
+
+
+
 ## 🛠️ How It Works
 
 The detection model follows a multi-step approach:
