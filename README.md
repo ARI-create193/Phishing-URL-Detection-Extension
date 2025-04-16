@@ -103,10 +103,8 @@ Contributions are welcome! If you'd like to improve the Phishing URL Detector:
 5. Open a Pull Request
 
 ## 🖥️ Demo
-![image](https://github.com/user-attachments/assets/0a2d7982-1c88-4072-9d0c-52a3f84bd054)
-![image](https://github.com/user-attachments/assets/327f58c2-fea4-42d1-a271-c3991fecb4af)
-![image](https://github.com/user-attachments/assets/41d50f4f-8b11-4690-a3b5-08c22fe3e4b7)
-![image](https://github.com/user-attachments/assets/4a91ffee-bfc7-4bfa-8448-660727e35980)
+![image](https://github.com/user-attachments/assets/0a2d7982-1c88-4072-9d0c-52a3f84bd054)![image](https://github.com/user-attachments/assets/327f58c2-fea4-42d1-a271-c3991fecb4af)
+![image](https://github.com/user-attachments/assets/41d50f4f-8b11-4690-a3b5-08c22fe3e4b7)![image](https://github.com/user-attachments/assets/4a91ffee-bfc7-4bfa-8448-660727e35980)
 
 
 
