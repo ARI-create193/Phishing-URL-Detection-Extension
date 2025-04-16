@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phishing URL Detector</title>
+  <style>
+    :root {
+      --primary-color: #4285f4;
+      --danger-color: #ea4335;
+      --success-color: #34a853;
+      --warning-color: #fbbc05;
+      --text-dark: #202124;
+      --text-light: #5f6368;
+      --background-light: #ffffff;
+      --background-dark: #f8f9fa;
+      --border-color: #dadce0;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      width: 380px;
+      margin: 0;
+      background-color: var(--background-light);
+      color: var(--text-dark);
+    }
+    
+    .header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--background-light);
+    }
+    
+    .header img {
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    .tab-navigation {
+      display: flex;
+      background-color: var(--background-light);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .tab-button {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-light);
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .tab-button.active {
+      color: var(--primary-color);
+    }
+    
+    .tab-button.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background-color: var(--primary-color);
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 16px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .url-input-group {
+      display: flex;
+      margin-bottom: 16px;
+    }
+    
+    .url-input-container {
+      flex: 1;
+      position: relative;
+    }
+    
+    .url-input-container input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    
+    .url-input-container input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+    
+    .url-input-container .url-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #3b78e7;
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(66, 133, 244, 0.1);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #d33426;
+    }
+    
+    .result {
+      display: none;
+      margin-top: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      background-color: var(--background-dark);
+    }
+    
+    .result h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .result h2::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .result.phishing {
+      background-color: rgba(234, 67, 53, 0.1);
+      border: 1px solid rgba(234, 67, 53, 0.3);
+    }
+    
+    .result.phishing h2 {
+      color: var(--danger-color);
+    }
+    
+    .result.phishing h2::before {
+      background-color: var(--danger-color);
+    }
+    
+    .result.legitimate {
+      background-color: rgba(52, 168, 83, 0.1);
+      border: 1px solid rgba(52, 168, 83, 0.3);
+    }
+    
+    .result.legitimate h2 {
+      color: var(--success-color);
+    }
+    
+    .result.legitimate h2::before {
+      background-color: var(--success-color);
+    }
+    
+    .confidence {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+    
+    .explanation {
+      font-size: 14px;
+      line-height: 1.5;
+      background-color: rgba(255, 255, 255, 0.5);
+      padding: 12px;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-line;
+    }
+    
+    .domain-age {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .domain-age-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .detections-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .detections-header h2 {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .detection-item {
+      background-color: var(--background-light);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    
+    .detection-url {
+      font-weight: 500;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    
+    .detection-time {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+    
+    .detection-result {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .detection-result.phishing {
+      background-color: rgba(234, 67, 53, 0.1);
+      color: var(--danger-color);
+    }
+    
+    .detection-result.legitimate {
+      background-color: rgba(52, 168, 83, 0.1);
+      color: var(--success-color);
+    }
+    
+    .settings-section {
+      margin-bottom: 20px;
+    }
+    
+    .settings-section h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    
+    .settings-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      margin-right: 12px;
+    }
+    
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    
+    .settings-label {
+      font-size: 14px;
+    }
+    
+    .risk-factors {
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    
+    .risk-factor-item {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .risk-factor-item:last-child {
+      border-bottom: none;
+    }
+    
+    .risk-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background-color: var(--danger-color);
+    }
+    
+    .no-detections {
+      text-align: center;
+      padding: 24px 0;
+      color: var(--text-light);
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 16px;
+    }
+    
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(66, 133, 244, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .footer {
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-light);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .safe-browsing {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .safe-browsing-status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 16px;
+      background-color: rgba(52, 168, 83, 0.1);
+      color: var(--success-color);
+      font-size: 12px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icons/icon48.png" alt="Phishing Detector Logo">
+    <h1>Phishing URL Detector</h1>
+  </div>
+  
+  <div class="tab-navigation">
+    <button class="tab-button active" data-tab="analyzer">Analyzer</button>
+    <button class="tab-button" data-tab="history">History</button>
+    <button class="tab-button" data-tab="settings">Settings</button>
+  </div>
+  
+  <div id="analyzer" class="tab-content active">
+    <div class="url-input-group">
+      <div class="url-input-container">
+        <input type="text" id="url-input" placeholder="Enter URL to analyze">
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button id="analyze-btn" class="btn btn-primary">Analyze URL</button>
+      <button id="analyze-current-btn" class="btn btn-outline">Analyze Current Page</button>
+    </div>
+    
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <div>Analyzing URL...</div>
+    </div>
+    
+    <div id="result" class="result">
+      <!-- Result will be populated by JS -->
+    </div>
+    
+    <div class="safe-browsing">
+      <span class="safe-browsing-status">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        Safe Browsing Protection Active
+      </span>
+    </div>
+  </div>
+  
+  <div id="history" class="tab-content">
+    <div class="detections-header">
+      <h2>Detection History</h2>
+      <button id="clear-history" class="btn btn-danger">Clear History</button>
+    </div>
+    
+    <div id="detections-list">
+      <!-- Detection history will be populated by JS -->
+    </div>
+  </div>
+  
+  <div id="settings" class="tab-content">
+    <div class="settings-section">
+      <h3>Protection Settings</h3>
+      
+      <div class="settings-option">
+        <label class="toggle">
+          <input type="checkbox" id="real-time-protection" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="settings-label">Real-time URL Protection</div>
+      </div>
+      
+      <div class="settings-option">
+        <label class="toggle">
+          <input type="checkbox" id="show-warnings" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="settings-label">Show Warning Overlays</div>
+      </div>
+
+      <div class="settings-option">
+        <label class="toggle">
+          <input type="checkbox" id="check-domain-age" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="settings-label">Check Domain Age</div>
+      </div>
+      
+      <div class="settings-option">
+        <label class="toggle">
+          <input type="checkbox" id="advanced-analysis" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="settings-label">Advanced URL Analysis</div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h3>Sensitivity Level</h3>
+      <input type="range" min="1" max="5" value="3" class="slider" id="sensitivity-slider">
+      <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+        <span style="font-size: 12px;">Low</span>
+        <span style="font-size: 12px;">Medium</span>
+        <span style="font-size: 12px;">High</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    Phishing URL Detector v1.0 | © 2025
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
