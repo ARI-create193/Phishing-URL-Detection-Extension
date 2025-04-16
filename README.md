@@ -6,7 +6,6 @@
 
 Phishing URL Detector is a powerful Chrome extension designed to protect users from phishing attacks by analyzing URLs in real-time. Using advanced heuristic algorithms and feature extraction techniques, the extension evaluates URLs to identify potential phishing attempts before users interact with malicious websites.
 
-![Phishing URL Detector Screenshot](https://via.placeholder.com/640x400?text=Phishing+URL+Detector)
 
 ## ✨ Features
 
@@ -102,6 +101,14 @@ Contributions are welcome! If you'd like to improve the Phishing URL Detector:
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## 🖥️ Demo
+![image](https://github.com/user-attachments/assets/0a2d7982-1c88-4072-9d0c-52a3f84bd054)
+![image](https://github.com/user-attachments/assets/327f58c2-fea4-42d1-a271-c3991fecb4af)
+![image](https://github.com/user-attachments/assets/41d50f4f-8b11-4690-a3b5-08c22fe3e4b7)
+![image](https://github.com/user-attachments/assets/4a91ffee-bfc7-4bfa-8448-660727e35980)
+
+
 
 ## 📞 Contact
 
