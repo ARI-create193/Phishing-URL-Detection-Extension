@@ -2,14 +2,17 @@
   "manifest_version": 3,
   "name": "Phishing URL Detector",
   "version": "1.0",
-  "description": "Detects potential phishing URLs and provides warnings",
+  "description": "Detects and warns about potential phishing URLs",
   "permissions": [
     "activeTab",
     "storage",
-    "webNavigation"
+    "tabs",
+    "webNavigation",
+    "webRequest"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -29,8 +32,14 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["contentScript.js"]
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["warning.html", "icons/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
