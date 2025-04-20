@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Load detections if history tab
       if (tabId === 'history') {
         loadDetections();
+      } else if (tabId === 'statistics') {
+        loadStatistics();
       }
     });
   });
@@ -62,7 +64,13 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('show-warnings').addEventListener('change', saveSettings);
   document.getElementById('check-domain-age').addEventListener('change', saveSettings);
   document.getElementById('advanced-analysis').addEventListener('change', saveSettings);
-  document.getElementById('sensitivity-slider').addEventListener('change', saveSettings);
+  document.getElementById('monitor-suspicious-tlds').addEventListener('change', saveSettings);
+  document.getElementById('sensitivity-level').addEventListener('change', saveSettings);
+  
+  // Refresh statistics button click
+  document.getElementById('refresh-stats').addEventListener('click', function() {
+    loadStatistics();
+  });
 
   // Loading indicator
   function showLoading(show) {
@@ -82,28 +90,11 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.runtime.sendMessage({ 
       action: "analyzeUrl", 
       url: url,
-      checkDomainAge: document.getElementById('check-domain-age').checked
+      checkDomainAge: document.getElementById('check-domain-age').checked,
+      sensitivityLevel: parseInt(document.getElementById('sensitivity-level').value)
     }, function(response) {
       showLoading(false);
       displayResult(response);
-    });
-  }
-  
-  // Check domain age function
-  function checkDomainAge(domain) {
-    return new Promise((resolve) => {
-      // Simulate domain age check
-      // In a real implementation, this would call a WHOIS API service
-      setTimeout(() => {
-        // Random domain age for demo purposes
-        const ageInDays = Math.floor(Math.random() * 3650); // 0-10 years
-        resolve({
-          domain: domain,
-          ageInDays: ageInDays,
-          registrationDate: new Date(Date.now() - ageInDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          isSuspicious: ageInDays < 30 // Domains less than 30 days old are flagged
-        });
-      }, 300);
     });
   }
   
@@ -150,6 +141,68 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="domain-age-title">Domain Age:</div>
           <div>${result.domainAge.ageInDays} days (Registered: ${result.domainAge.registrationDate})</div>
           <div>Status: ${ageStatus}</div>
+        </div>
+      `;
+    }
+    
+    // Add domain category
+    let categoryHTML = '';
+    if (result.urlInfo && result.urlInfo.category) {
+      // Get category icon
+      let categoryIcon = '💻'; // Default tech icon
+      switch(result.urlInfo.category) {
+        case 'education': categoryIcon = '🎓'; break;
+        case 'ecommerce': categoryIcon = '🛒'; break;
+        case 'social': categoryIcon = '👥'; break;
+        case 'financial': categoryIcon = '🏦'; break;
+        case 'gaming': categoryIcon = '🎮'; break;
+        case 'streaming': categoryIcon = '🎬'; break;
+        case 'technology': categoryIcon = '💻'; break;
+        case 'government': categoryIcon = '🏛️'; break;
+        case 'healthcare': categoryIcon = '🏥'; break;
+        case 'news': categoryIcon = '📰'; break;
+      }
+      
+      const categoryName = result.urlInfo.category.charAt(0).toUpperCase() + result.urlInfo.category.slice(1);
+      categoryHTML = `
+        <div style="margin-top: 8px;">
+          <span class="domain-category">
+            <span class="category-icon">${categoryIcon}</span>${categoryName}
+          </span>
+        </div>
+      `;
+    }
+    
+    // Check for suspicious TLD
+    let tldHTML = '';
+    const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top', '.work',
+      '.date', '.bid', '.stream', '.download', '.loan'];
+    
+    if (result.urlInfo && result.urlInfo.domain) {
+      const domain = result.urlInfo.domain.toLowerCase();
+      const hasSuspiciousTLD = suspiciousTLDs.some(tld => domain.endsWith(tld));
+      
+      if (hasSuspiciousTLD && document.getElementById('monitor-suspicious-tlds').checked) {
+        tldHTML = `
+          <span class="suspicious-tld">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Suspicious TLD
+          </span>
+        `;
+      }
+    }
+    
+    // Add phishing count information if available
+    let phishingCountHTML = '';
+    if (result.phishingCount && result.phishingCount > 0) {
+      phishingCountHTML = `
+        <div style="margin-top: 8px; padding: 8px; background-color: ${result.phishingCount > 1 ? 'rgba(234, 67, 53, 0.1)' : 'rgba(251, 188, 5, 0.1)'}; border-radius: 4px;">
+          <div style="font-weight: 500;">Previous Detections:</div>
+          <div>This domain has been detected in ${result.phishingCount} phishing attempts.</div>
         </div>
       `;
     }
@@ -216,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="confidence">Confidence: ${(result.confidence * 100).toFixed(2)}%</div>
       <div class="explanation">
         Analysis of: ${result.url}
+        ${categoryHTML}
+        ${tldHTML}
+        ${phishingCountHTML}
         ${domainAgeHTML}
         ${featuresHTML}
         ${riskFactorsHTML}
@@ -245,11 +301,70 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = new Date(detection.timestamp);
         const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         
+        // Get category icon
+        let categoryIcon = '💻'; // Default tech icon
+        let categoryName = detection.category || 'unknown';
+        switch(categoryName) {
+          case 'education': categoryIcon = '🎓'; break;
+          case 'ecommerce': categoryIcon = '🛒'; break;
+          case 'social': categoryIcon = '👥'; break;
+          case 'financial': categoryIcon = '🏦'; break;
+          case 'gaming': categoryIcon = '🎮'; break;
+          case 'streaming': categoryIcon = '🎬'; break;
+          case 'technology': categoryIcon = '💻'; break;
+          case 'government': categoryIcon = '🏛️'; break;
+          case 'healthcare': categoryIcon = '🏥'; break;
+          case 'news': categoryIcon = '📰'; break;
+        }
+        categoryName = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+        
+        // Check for suspicious TLD
+        const suspiciousTLDs = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top', '.work',
+          '.date', '.bid', '.stream', '.download', '.loan'];
+        
+        let tldHTML = '';
+        try {
+          const domain = new URL(detection.url).hostname;
+          const hasSuspiciousTLD = suspiciousTLDs.some(tld => domain.endsWith(tld));
+          
+          if (hasSuspiciousTLD && document.getElementById('monitor-suspicious-tlds').checked) {
+            tldHTML = `
+              <span class="suspicious-tld" style="margin-left: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Suspicious TLD
+              </span>
+            `;
+          }
+        } catch (e) {
+          console.error("Invalid URL in detection history:", e);
+        }
+        
+        // Add phishing count information
+        let phishingCountHTML = '';
+        if (detection.phishingCount && detection.phishingCount > 1) {
+          phishingCountHTML = `
+            <div style="margin-top: 6px; font-size: 12px; color: var(--danger-color);">
+              ⚠️ Multiple detections from this domain (${detection.phishingCount})
+            </div>
+          `;
+        }
+        
         detectionDiv.innerHTML = `
           <div class="detection-url">${detection.url}</div>
           <div class="detection-time">${formattedDate}</div>
           <div class="detection-result ${detection.classification.toLowerCase()}">${detection.classification}</div>
           <div>Confidence: ${(detection.confidence * 100).toFixed(2)}%</div>
+          <div style="margin-top: 8px;">
+            <span class="domain-category">
+              <span class="category-icon">${categoryIcon}</span>${categoryName}
+            </span>
+            ${tldHTML}
+          </div>
+          ${phishingCountHTML}
           ${detection.domainAge ? `
             <div style="margin-top: 8px; font-size: 12px;">
               Domain Age: ${detection.domainAge.ageInDays} days
@@ -271,14 +386,24 @@ document.addEventListener('DOMContentLoaded', function() {
         showWarnings: true,
         checkDomainAge: true,
         advancedAnalysis: true,
-        sensitivityLevel: 3
+        sensitivityLevel: 3,
+        monitorSuspiciousTlds: true
       };
       
       document.getElementById('real-time-protection').checked = settings.realTimeProtection;
       document.getElementById('show-warnings').checked = settings.showWarnings;
       document.getElementById('check-domain-age').checked = settings.checkDomainAge;
       document.getElementById('advanced-analysis').checked = settings.advancedAnalysis;
-      document.getElementById('sensitivity-slider').value = settings.sensitivityLevel;
+      
+      // Handle sensitivity slider
+      const sensitivitySlider = document.getElementById('sensitivity-level');
+      if (sensitivitySlider) {
+        sensitivitySlider.value = settings.sensitivityLevel;
+      }
+      
+      // Set monitor suspicious TLDs checkbox
+      document.getElementById('monitor-suspicious-tlds').checked = 
+        settings.monitorSuspiciousTlds !== undefined ? settings.monitorSuspiciousTlds : true;
     });
   }
   
@@ -289,13 +414,120 @@ document.addEventListener('DOMContentLoaded', function() {
       showWarnings: document.getElementById('show-warnings').checked,
       checkDomainAge: document.getElementById('check-domain-age').checked,
       advancedAnalysis: document.getElementById('advanced-analysis').checked,
-      sensitivityLevel: parseInt(document.getElementById('sensitivity-slider').value)
+      sensitivityLevel: parseInt(document.getElementById('sensitivity-level').value),
+      monitorSuspiciousTlds: document.getElementById('monitor-suspicious-tlds').checked
     };
     
     chrome.storage.local.set({ settings });
     
     // Send updated settings to background script
     chrome.runtime.sendMessage({ action: "updateSettings", settings });
+  }
+  
+  // Load statistics
+  function loadStatistics() {
+    chrome.runtime.sendMessage({ action: "getAllPhishingStatistics" }, function(statistics) {
+      console.log("Received statistics:", statistics);
+      
+      if (!statistics || !statistics.totalPhishingAttempts) {
+        console.log("No statistics received or empty statistics");
+        statistics = {
+          domainCounts: {},
+          categoryCounts: {},
+          categoryPercentages: {},
+          totalPhishingAttempts: 0,
+          mostTargetedCategory: ['unknown', 0]
+        };
+      }
+      
+      // Update total count
+      document.getElementById('total-count').textContent = statistics.totalPhishingAttempts || 0;
+      
+      // Update most targeted category
+      const mostTargetedCategory = statistics.mostTargetedCategory ? 
+        (statistics.mostTargetedCategory[0].charAt(0).toUpperCase() + 
+         statistics.mostTargetedCategory[0].slice(1)) : 'None yet';
+      
+      document.getElementById('most-targeted-category').textContent = mostTargetedCategory;
+      
+      // Update category statistics
+      const categoryStatsDiv = document.getElementById('category-statistics');
+      categoryStatsDiv.innerHTML = '';
+      
+      // Get sorted categories by count
+      const categories = Object.keys(statistics.categoryCounts || {})
+        .filter(category => statistics.categoryCounts[category] > 0)
+        .sort((a, b) => statistics.categoryCounts[b] - statistics.categoryCounts[a]);
+      
+      if (categories.length > 0) {
+        categories.slice(0, 4).forEach(category => {
+          const count = statistics.categoryCounts[category];
+          const percentage = statistics.totalPhishingAttempts ? 
+            ((count / statistics.totalPhishingAttempts) * 100).toFixed(1) + '%' : '0%';
+          
+          const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+          let categoryIcon = '💻'; // Default tech icon
+          
+          switch(category) {
+            case 'education': categoryIcon = '🎓'; break;
+            case 'ecommerce': categoryIcon = '🛒'; break;
+            case 'social': categoryIcon = '👥'; break;
+            case 'financial': categoryIcon = '🏦'; break;
+            case 'gaming': categoryIcon = '🎮'; break;
+            case 'streaming': categoryIcon = '🎬'; break;
+            case 'technology': categoryIcon = '💻'; break;
+            case 'government': categoryIcon = '🏛️'; break;
+            case 'healthcare': categoryIcon = '🏥'; break;
+            case 'news': categoryIcon = '📰'; break;
+          }
+          
+          const div = document.createElement('div');
+          div.className = 'category-stat-item';
+          div.innerHTML = `
+            <div class="category-stat-name">
+              <span class="category-icon">${categoryIcon}</span>${categoryName}
+            </div>
+            <div class="category-stat-value">${count}</div>
+            <div class="category-stat-percentage">${percentage}</div>
+          `;
+          
+          categoryStatsDiv.appendChild(div);
+        });
+      } else {
+        categoryStatsDiv.innerHTML = '<div style="padding: 8px;">No data available yet</div>';
+      }
+      
+      // Update domain statistics
+      const domainStatsDiv = document.getElementById('domain-statistics');
+      domainStatsDiv.innerHTML = '';
+      
+      // Get domains with phishing counts
+      const domains = Object.keys(statistics.domainCounts || {})
+        .filter(domain => statistics.domainCounts[domain] > 0)
+        .sort((a, b) => statistics.domainCounts[b] - statistics.domainCounts[a]);
+      
+      if (domains.length > 0) {
+        domains.slice(0, 4).forEach(domain => {
+          const count = statistics.domainCounts[domain];
+          const percentage = statistics.totalPhishingAttempts ? 
+            ((count / statistics.totalPhishingAttempts) * 100).toFixed(1) + '%' : '0%';
+          
+          const div = document.createElement('div');
+          div.className = 'category-stat-item';
+          div.innerHTML = `
+            <div class="category-stat-name" style="word-break: break-all;">
+              ${domain}
+            </div>
+            <div class="category-stat-value">${count}</div>
+            <div class="category-stat-percentage">${percentage}</div>
+          `;
+          
+          domainStatsDiv.appendChild(div);
+        });
+      } else {
+        domainStatsDiv.innerHTML = '<div style="padding: 8px;">No data available yet</div>';
+      }
+    });
   }
   
   // Load current page URL on popup open
