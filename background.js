@@ -11,6 +11,20 @@ const suspiciousPatterns = [
   /[a-z]+-[a-z]+\.[a-z]+/
 ];
 
+// Domain category keywords
+const domainCategories = {
+  education: ['university', 'edu', 'college', 'academic', 'school', 'learning', 'blackboard', 'canvas', 'moodle', 'scholar', 'edu.co', 'academy', 'institute', 'seminar', 'course', 'education'],
+  ecommerce: ['ebay', 'amazon', 'shop', 'store', 'buy', 'product', 'mall', 'market', 'retail', 'sale', 'cart', 'checkout', 'order', 'shopping', 'alibaba', 'walmart', 'target', 'merchant'],
+  social: ['facebook', 'twitter', 'instagram', 'linkedin', 'tiktok', 'social', 'friend', 'connect', 'network', 'chat', 'messenger', 'whatsapp', 'snapchat', 'pinterest', 'reddit', 'telegram', 'discord'],
+  financial: ['bank', 'paypal', 'crypto', 'wallet', 'payment', 'finance', 'credit', 'debit', 'loan', 'money', 'investment', 'stock', 'bitcoin', 'blockchain', 'card', 'visa', 'mastercard', 'exchange'],
+  gaming: ['game', 'steam', 'epic', 'origin', 'battle', 'league', 'fortnite', 'minecraft', 'xbox', 'playstation', 'nintendo', 'esports', 'blizzard', 'riot', 'valve', 'gaming'],
+  streaming: ['netflix', 'amazon prime', 'hulu', 'disney', 'youtube', 'twitch', 'vimeo', 'paramount', 'stream', 'watch', 'video', 'movie', 'tv', 'series', 'episode', 'crunchyroll'],
+  technology: ['microsoft', 'apple', 'google', 'icloud', 'dropbox', 'drive', 'office', 'adobe', 'software', 'tech', 'support', 'update', 'download', 'windows', 'macos', 'android', 'ios'],
+  government: ['gov', 'government', 'federal', 'state', 'city', 'municipality', 'agency', 'department', 'public', 'passport', 'tax', 'service', 'military', 'court', 'justice', 'official'],
+  healthcare: ['health', 'medical', 'doctor', 'hospital', 'clinic', 'pharmacy', 'medicine', 'patient', 'healthcare', 'insurance', 'treatment', 'diagnosis', 'nursing', 'covid', 'vaccine'],
+  news: ['news', 'media', 'article', 'journal', 'magazine', 'press', 'daily', 'times', 'post', 'herald', 'tribune', 'cnn', 'bbc', 'reuters', 'associated press', 'blog']
+};
+
 // Default settings
 let settings = {
   realTimeProtection: true,
@@ -20,10 +34,37 @@ let settings = {
   sensitivityLevel: 3
 };
 
-// Load settings on extension startup
-chrome.storage.local.get('settings', (data) => {
+// Maintain a dictionary of domain-based phishing counts
+let domainPhishingCounts = {};
+
+// NEW: Track phishing counts by category
+let categoryPhishingCounts = {
+  education: 0,
+  ecommerce: 0,
+  social: 0,
+  financial: 0,
+  gaming: 0,
+  streaming: 0,
+  technology: 0,
+  government: 0,
+  healthcare: 0,
+  news: 0,
+  unknown: 0
+};
+
+// Load settings, domain counts, and category counts on extension startup
+chrome.storage.local.get(['settings', 'domainPhishingCounts', 'categoryPhishingCounts'], (data) => {
   if (data.settings) {
     settings = data.settings;
+  }
+  
+  if (data.domainPhishingCounts) {
+    domainPhishingCounts = data.domainPhishingCounts;
+  }
+  
+  // NEW: Load category phishing counts
+  if (data.categoryPhishingCounts) {
+    categoryPhishingCounts = data.categoryPhishingCounts;
   }
 });
 
@@ -38,6 +79,28 @@ function extractDomain(url) {
     const matches = url.match(domainRegex);
     return matches ? matches[1] : url;
   }
+}
+
+// Function to determine domain category
+function determineDomainCategory(url) {
+  const domain = extractDomain(url).toLowerCase();
+  const urlLower = url.toLowerCase();
+  
+  let matchedCategories = [];
+  
+  // Check each category for matches
+  for (const [category, keywords] of Object.entries(domainCategories)) {
+    const hasMatch = keywords.some(keyword => {
+      return domain.includes(keyword) || urlLower.includes(keyword);
+    });
+    
+    if (hasMatch) {
+      matchedCategories.push(category);
+    }
+  }
+  
+  // Return the first match or 'unknown' if no matches
+  return matchedCategories.length > 0 ? matchedCategories[0] : 'unknown';
 }
 
 // Preprocess URL to extract features
@@ -64,10 +127,12 @@ function preprocessUrl(url) {
     const numEquals = query.split('=').length - 1;
     const numDigits = (domain.match(/\d/g) || []).length;
     const subdomainLevels = domain.split('.').length - 1;
+    const category = determineDomainCategory(url);
     
     return {
       url,
       domain,
+      category,
       domainLength,
       pathLength,
       hasSuspiciousWords,
@@ -84,6 +149,7 @@ function preprocessUrl(url) {
     return {
       url,
       domain: extractDomain(url),
+      category: 'unknown',
       domainLength: 0,
       pathLength: 0,
       hasSuspiciousWords: false,
@@ -224,10 +290,21 @@ function explainPrediction(url, result, urlInfo) {
   
   explanation += "Extracted Features:\n";
   explanation += `- Domain: ${urlInfo.domain}\n`;
+  explanation += `- Domain Category: ${urlInfo.category.charAt(0).toUpperCase() + urlInfo.category.slice(1)}\n`;
   explanation += `- Domain Length: ${urlInfo.domainLength} characters\n`;
   explanation += `- Path Length: ${urlInfo.pathLength} characters\n`;
   explanation += `- Number of Dots: ${urlInfo.numDots}\n`;
   explanation += `- Number of Hyphens: ${urlInfo.numHyphens}\n`;
+  
+  // Add domain phishing count if available
+  if (domainPhishingCounts[urlInfo.domain]) {
+    explanation += `- Phishing URLs detected from this domain: ${domainPhishingCounts[urlInfo.domain]}\n`;
+  }
+  
+  // NEW: Add category phishing count
+  if (categoryPhishingCounts[urlInfo.category]) {
+    explanation += `- Phishing URLs detected in ${urlInfo.category} category: ${categoryPhishingCounts[urlInfo.category]}\n`;
+  }
   
   // Add risk factors
   const riskFactors = [];
@@ -255,6 +332,9 @@ function explainPrediction(url, result, urlInfo) {
   if (urlInfo.domainAge && urlInfo.domainAge.isSuspicious) {
     riskFactors.push(`Recently registered domain (${urlInfo.domainAge.ageInDays} days old)`);
   }
+  if (domainPhishingCounts[urlInfo.domain] && domainPhishingCounts[urlInfo.domain] > 1) {
+    riskFactors.push(`Multiple phishing attempts detected from this domain (${domainPhishingCounts[urlInfo.domain]} total)`);
+  }
   
   if (riskFactors.length > 0) {
     explanation += "\nRisk Factors Detected:\n";
@@ -264,6 +344,28 @@ function explainPrediction(url, result, urlInfo) {
   }
   
   return explanation;
+}
+
+// Function to update domain phishing count
+function updateDomainPhishingCount(domain, category) {
+  if (!domainPhishingCounts[domain]) {
+    domainPhishingCounts[domain] = 1;
+  } else {
+    domainPhishingCounts[domain]++;
+  }
+  
+  // NEW: Update category phishing count
+  if (category && categoryPhishingCounts.hasOwnProperty(category)) {
+    categoryPhishingCounts[category]++;
+  } else {
+    categoryPhishingCounts.unknown++;
+  }
+  
+  // Save updated counts to storage
+  chrome.storage.local.set({ 
+    domainPhishingCounts,
+    categoryPhishingCounts  // NEW: Save category counts
+  });
 }
 
 // Analyze a URL and return results
@@ -280,6 +382,21 @@ async function analyzeUrl(url, checkDomainAgeOption = true) {
   }
   
   const result = analyzeUrlFeatures(urlInfo);
+  
+  // Add domain phishing count to URL info if available
+  if (domainPhishingCounts[urlInfo.domain]) {
+    urlInfo.phishingCount = domainPhishingCounts[urlInfo.domain];
+  } else {
+    urlInfo.phishingCount = 0;
+  }
+  
+  // NEW: Add category phishing count
+  if (categoryPhishingCounts[urlInfo.category]) {
+    urlInfo.categoryPhishingCount = categoryPhishingCounts[urlInfo.category];
+  } else {
+    urlInfo.categoryPhishingCount = 0;
+  }
+  
   const explanation = explainPrediction(url, result, urlInfo);
   
   return {
@@ -289,7 +406,10 @@ async function analyzeUrl(url, checkDomainAgeOption = true) {
     score: result.score,
     explanation: explanation,
     urlInfo: urlInfo,
-    domainAge: urlInfo.domainAge
+    domainAge: urlInfo.domainAge,
+    phishingCount: urlInfo.phishingCount,
+    categoryPhishingCount: urlInfo.categoryPhishingCount,  // NEW: Include category count
+    category: urlInfo.category  // NEW: Include category
   };
 }
 
@@ -311,6 +431,11 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
       data: result
     });
     
+    // Update domain and category phishing counts
+    if (result.urlInfo && result.urlInfo.domain) {
+      updateDomainPhishingCount(result.urlInfo.domain, result.urlInfo.category);
+    }
+    
     // Store this detection
     chrome.storage.local.get('detections', (data) => {
       const detections = data.detections || [];
@@ -319,7 +444,11 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
         timestamp: new Date().toISOString(),
         classification: result.classification,
         confidence: result.confidence,
-        domainAge: result.domainAge
+        domainAge: result.domainAge,
+        category: result.urlInfo.category,
+        domain: result.urlInfo.domain,
+        phishingCount: domainPhishingCounts[result.urlInfo.domain] || 1,
+        categoryPhishingCount: categoryPhishingCounts[result.urlInfo.category] || 1  // NEW: Include category count
       });
       
       // Limit stored detections to most recent 100
@@ -337,21 +466,72 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "analyzeUrl") {
     analyzeUrl(message.url, message.checkDomainAge)
       .then(result => {
+        // If URL is classified as phishing, update the count
+        if (result.classification === "Phishing" && result.confidence > 0.5) {
+          if (result.urlInfo && result.urlInfo.domain) {
+            updateDomainPhishingCount(result.urlInfo.domain, result.urlInfo.category);
+            // Update the result with the new counts
+            result.phishingCount = domainPhishingCounts[result.urlInfo.domain];
+            result.categoryPhishingCount = categoryPhishingCounts[result.urlInfo.category];
+          }
+        }
         sendResponse(result);
       });
     return true; // Required for async response
   } else if (message.action === "getDetections") {
     chrome.storage.local.get('detections', (data) => {
-      sendResponse(data.detections || []);
+      const detections = data.detections || [];
+      
+      // Add domain and category phishing counts to each detection
+      detections.forEach(detection => {
+        if (detection.domain) {
+          detection.phishingCount = domainPhishingCounts[detection.domain] || 0;
+        }
+        if (detection.category) {
+          detection.categoryPhishingCount = categoryPhishingCounts[detection.category] || 0;
+        }
+      });
+      
+      sendResponse(detections);
     });
     return true; // Required for async response
   } else if (message.action === "clearDetections") {
     chrome.storage.local.set({ detections: [] });
+    // Optionally clear domain phishing counts
+    // domainPhishingCounts = {};
+    // chrome.storage.local.set({ domainPhishingCounts: {} });
     sendResponse({ success: true });
   } else if (message.action === "updateSettings") {
     settings = message.settings;
     chrome.storage.local.set({ settings });
     sendResponse({ success: true });
+  } else if (message.action === "getDomainPhishingCounts") {
+    sendResponse(domainPhishingCounts);
+  } 
+  // NEW: Add handler for getting category statistics
+  else if (message.action === "getCategoryPhishingCounts") {
+    sendResponse(categoryPhishingCounts);
+  }
+  // NEW: Add handler for getting all statistics
+  else if (message.action === "getAllPhishingStatistics") {
+    // Get total across all categories
+    const totalPhishingAttempts = Object.values(categoryPhishingCounts).reduce((a, b) => a + b, 0);
+    
+    // Calculate percentages for each category
+    const categoryPercentages = {};
+    for (const [category, count] of Object.entries(categoryPhishingCounts)) {
+      categoryPercentages[category] = totalPhishingAttempts > 0 ? 
+        ((count / totalPhishingAttempts) * 100).toFixed(1) + '%' : '0%';
+    }
+    
+    sendResponse({
+      domainCounts: domainPhishingCounts,
+      categoryCounts: categoryPhishingCounts,
+      categoryPercentages: categoryPercentages,
+      totalPhishingAttempts: totalPhishingAttempts,
+      mostTargetedCategory: Object.entries(categoryPhishingCounts)
+        .sort((a, b) => b[1] - a[1])[0]
+    });
   }
 });
 
@@ -366,9 +546,9 @@ function hasSuspiciousTLD(domain) {
   return suspiciousTLDs.some(tld => domain.endsWith(tld));
 }
 
-// Initialize settings when extension is installed
+// Initialize settings, domainPhishingCounts and categoryPhishingCounts when extension is installed
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get('settings', (data) => {
+  chrome.storage.local.get(['settings', 'domainPhishingCounts', 'categoryPhishingCounts'], (data) => {
     if (!data.settings) {
       chrome.storage.local.set({ 
         settings: {
@@ -377,6 +557,29 @@ chrome.runtime.onInstalled.addListener(() => {
           checkDomainAge: true,
           advancedAnalysis: true,
           sensitivityLevel: 3
+        }
+      });
+    }
+    
+    if (!data.domainPhishingCounts) {
+      chrome.storage.local.set({ domainPhishingCounts: {} });
+    }
+    
+    // NEW: Initialize category counts if not present
+    if (!data.categoryPhishingCounts) {
+      chrome.storage.local.set({ 
+        categoryPhishingCounts: {
+          education: 0,
+          ecommerce: 0,
+          social: 0,
+          financial: 0,
+          gaming: 0,
+          streaming: 0,
+          technology: 0,
+          government: 0,
+          healthcare: 0,
+          news: 0,
+          unknown: 0
         }
       });
     }
