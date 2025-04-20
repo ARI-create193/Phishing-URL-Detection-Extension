@@ -440,6 +440,90 @@
       font-size: 12px;
       font-weight: 500;
     }
+    
+    .domain-category {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      background-color: rgba(66, 133, 244, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .suspicious-tld {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      background-color: rgba(251, 188, 5, 0.1);
+      color: var(--warning-color);
+      margin-bottom: 8px;
+    }
+    
+    .category-icon {
+      margin-right: 4px;
+      vertical-align: middle;
+      width: 12px;
+      height: 12px;
+    }
+    
+    /* New styles for domain categories and statistics */
+    .statistics-section {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: var(--background-dark);
+      border-radius: 8px;
+    }
+    
+    .statistics-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .category-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .category-stat-item {
+      flex: 1 0 calc(50% - 8px);
+      padding: 8px;
+      background-color: white;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .category-stat-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .category-stat-value {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .category-stat-percentage {
+      color: var(--text-light);
+      font-size: 11px;
+    }
+    
+    .sensitivity-slider {
+      width: 100%;
+      margin: 16px 0;
+    }
+    
+    .sensitivity-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -452,6 +536,7 @@
     <button class="tab-button active" data-tab="analyzer">Analyzer</button>
     <button class="tab-button" data-tab="history">History</button>
     <button class="tab-button" data-tab="settings">Settings</button>
+    <button class="tab-button" data-tab="statistics">Stats</button>
   </div>
   
   <div id="analyzer" class="tab-content active">
@@ -531,16 +616,105 @@
         </label>
         <div class="settings-label">Advanced URL Analysis</div>
       </div>
+      
+      <div class="settings-section">
+        <h3>Detection Sensitivity</h3>
+        <div class="sensitivity-label">
+          <span>Low</span>
+          <span>Medium</span>
+          <span>High</span>
+        </div>
+        <input type="range" id="sensitivity-level" min="1" max="5" value="3" class="sensitivity-slider">
+        <div style="font-size: 12px; color: var(--text-light); margin-top: 4px;">
+          Higher sensitivity may increase false positives but catch more phishing attempts.
+        </div>
+      </div>
     </div>
     
     <div class="settings-section">
-      <h3>Sensitivity Level</h3>
-      <input type="range" min="1" max="5" value="3" class="slider" id="sensitivity-slider">
-      <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-        <span style="font-size: 12px;">Low</span>
-        <span style="font-size: 12px;">Medium</span>
-        <span style="font-size: 12px;">High</span>
+      <h3>Suspicious TLD Monitoring</h3>
+      <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">
+        The extension monitors these suspicious TLDs (.tk, .ml, .ga, .cf, .gq, .xyz, etc.) that are often used in phishing attacks.
       </div>
+      <div class="settings-option">
+        <label class="toggle">
+          <input type="checkbox" id="monitor-suspicious-tlds" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="settings-label">Monitor Suspicious TLDs</div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h3>Domain Categories</h3>
+      <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">
+        Detect and categorize domains for better phishing protection.
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🏦</span>Financial
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🛒</span>E-commerce
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">👥</span>Social
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🎮</span>Gaming
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🎓</span>Education
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🎬</span>Streaming
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">💻</span>Technology
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🏛️</span>Government
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">🏥</span>Healthcare
+      </div>
+      <div class="domain-category">
+        <span class="category-icon">📰</span>News
+      </div>
+    </div>
+  </div>
+  
+  <div id="statistics" class="tab-content">
+    <div class="settings-section">
+      <h3>Phishing Detection Statistics</h3>
+      <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">
+        Summary of detected phishing attempts by category and domain.
+      </div>
+      
+      <div id="total-detections" style="font-size: this: 15px; font-weight: 500; margin-bottom: 16px;">
+        Total phishing attempts detected: <span id="total-count">0</span>
+      </div>
+      
+      <div class="statistics-title">Most Targeted Categories:</div>
+      <div id="category-statistics" class="category-stats">
+        <!-- Will be populated by JS -->
+      </div>
+      
+      <div class="statistics-title">Top Phishing Domains:</div>
+      <div id="domain-statistics" class="category-stats">
+        <!-- Will be populated by JS -->
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h3>Detection Trends</h3>
+      <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">
+        Most frequently detected phishing category:
+        <span id="most-targeted-category" style="font-weight: 500; color: var(--danger-color);">None yet</span>
+      </div>
+      
+      <button id="refresh-stats" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+        Refresh Statistics
+      </button>
     </div>
   </div>
   
