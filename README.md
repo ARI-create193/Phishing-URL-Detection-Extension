@@ -103,7 +103,7 @@ Contributions are welcome! If you'd like to improve the Phishing URL Detector:
 5. Open a Pull Request
 
 ## 📊 PowerPoint Presentation
-
+https://github.com/ARI-create193/Phishing-URL-Detection-Extension/blob/main/PPT.pdf
 
 ## 🖥️ Demo
 ![image](https://github.com/user-attachments/assets/a20d94b2-8d6d-4fe2-bdf0-4f086297b741)
